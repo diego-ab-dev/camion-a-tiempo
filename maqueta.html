@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Maqueta Camión a Tiempo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800;900&family=Overpass+Mono:wght@600&display=swap">
+<style>
+/* Layout: la maqueta 3D ocupa toda la pantalla; a la derecha el teléfono sincronizado, abajo a la izquierda el recuadro de la etapa (atributo y propuesta de valor), abajo al centro los controles. */
+:root{
+  --ink:#0F2A30; --ink-2:#47595D; --ink-3:#7A8A8D;
+  --paper:#E2E6DF; --surface:#FFFFFF; --hair:#DCE2DF;
+  --vest:#F2611D; --led:#FFB21A; --sign:#127347; --aqua:#3BAA8E;
+  --sans:"Overpass",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Overpass Mono",ui-monospace,Menlo,monospace;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--vest);outline-offset:2px}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+.fade{position:fixed;inset:0;background:var(--paper);pointer-events:none;opacity:0}
+
+.head{position:fixed;top:calc(env(safe-area-inset-top,0px) + 22px);left:max(28px,env(safe-area-inset-left,0px));display:flex;gap:12px;align-items:center}
+.head svg{width:44px;height:44px;flex:none}
+.head small{display:block;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+.head b{display:block;font-size:24px;font-weight:900;letter-spacing:-.01em;line-height:1.1}
+
+/* recuadro de etapa */
+.cap{position:fixed;left:max(28px,env(safe-area-inset-left,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 92px);width:min(520px,calc(100% - 56px));background:var(--ink);color:#fff;border-radius:18px;padding:18px 20px 18px;box-shadow:0 18px 40px rgba(15,42,48,.25)}
+.cap .st{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.cap h2{margin:4px 0 12px;font-size:26px;line-height:1.1;font-weight:900;letter-spacing:-.01em;text-wrap:balance}
+.cap .row{display:grid;grid-template-columns:150px 1fr;gap:4px 14px;padding-top:10px;border-top:1px solid rgba(255,255,255,.14);margin-top:10px}
+.cap .row:first-of-type{border-top:0;margin-top:0;padding-top:0}
+.cap .k{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--led);line-height:1.35;padding-top:2px}
+.cap .v{font-size:16px;line-height:1.4;min-width:0}
+.cap .v b{color:#fff}
+
+/* controles */
+.ctl{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 22px);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.9);border:1px solid var(--hair);border-radius:999px;padding:6px;box-shadow:0 6px 18px rgba(15,42,48,.12)}
+.ctl button{border:0;background:none;cursor:pointer;border-radius:999px;font-weight:800;font-size:13px;padding:8px 12px;color:var(--ink-2)}
+.ctl .seg{position:relative;overflow:hidden;min-width:44px}
+.ctl .seg i{position:absolute;left:0;bottom:0;height:3px;background:var(--vest);width:0}
+.ctl .seg[aria-current="true"]{background:var(--ink);color:#fff}
+.ctl .pp{width:38px;height:38px;padding:0;display:grid;place-items:center;background:var(--ink);color:#fff}
+
+/* teléfono */
+.phone{position:fixed;right:max(48px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);width:300px;height:620px;background:#0B1416;border-radius:46px;padding:10px;box-shadow:0 30px 60px rgba(15,42,48,.3),inset 0 0 0 2px #2A3538}
+.scr{position:relative;height:100%;border-radius:37px;background:#F3F5F4;overflow:hidden;display:flex;flex-direction:column}
+.sb{display:flex;justify-content:space-between;align-items:center;padding:12px 24px 2px;font-size:13px;font-weight:800}
+.sb i{width:84px;height:24px;border-radius:14px;background:#0B1416}
+.ab{display:flex;align-items:center;gap:8px;padding:8px 16px}
+.ab svg{width:28px;height:28px}
+.ab b{font-size:15px;font-weight:800}
+.body{padding:4px 12px;display:flex;flex-direction:column;gap:10px}
+.eta{background:var(--ink);color:#fff;border-radius:16px;padding:12px 14px}
+.eta .r{display:flex;justify-content:space-between;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.65)}
+.eta .n{display:flex;align-items:baseline;gap:6px;color:var(--led);margin:4px 0 0;font-variant-numeric:tabular-nums}
+.eta .n b{font-size:56px;font-weight:800;line-height:1;letter-spacing:-.03em}
+.eta .n span{font-size:18px;font-weight:700}
+.eta .n.w b{font-size:34px}
+.eta .wh{font-size:13px;font-weight:600;margin-top:2px}
+.eta .wh em{font-style:normal;color:var(--led)}
+.trk{height:5px;border-radius:3px;background:rgba(255,255,255,.16);margin-top:10px;position:relative}
+.trk i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--led)}
+.ends{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.6);font-weight:600;margin-top:5px}
+.live{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--ink-2);padding:0 4px}
+.live .d{width:7px;height:7px;border-radius:50%;background:var(--sign);box-shadow:0 0 0 3px #E3F1EA}
+.card{background:#fff;border:1px solid var(--hair);border-radius:14px;padding:10px 12px;display:flex;gap:10px;align-items:center}
+.card small{display:block;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.card strong{font-size:13px;line-height:1.25;display:block}
+.pin{width:30px;height:30px;border-radius:9px;background:#F3F5F4;display:grid;place-items:center;flex:none}
+.fb{background:var(--sign);color:#fff;border-radius:14px;padding:12px}
+.fb p{margin:0 0 8px;font-weight:800;font-size:14px}
+.fb .two{display:flex;gap:8px}
+.fb .two span{flex:1;text-align:center;border-radius:10px;padding:8px;font-weight:900;font-size:14px;border:1px solid rgba(255,255,255,.8);position:relative}
+.fb .two span:first-child{background:#fff;color:var(--sign)}
+.fb .two span.tap::after{content:"";position:absolute;inset:-6px;border-radius:14px;border:3px solid var(--led)}
+.tabs{margin-top:auto;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid var(--hair);padding:8px 6px 18px}
+.tabs i{width:20px;height:18px;border-radius:5px;border:2.4px solid #9AA7AA;margin:auto}
+.tabs i:first-child{border-color:var(--vest)}
+.ntf{position:absolute;left:8px;right:8px;top:40px;background:rgba(250,251,250,.98);border-radius:18px;padding:10px 12px;display:flex;gap:10px;box-shadow:0 12px 26px rgba(15,42,48,.28);transform:translateY(-160%);transition:none}
+.ntf small{display:flex;justify-content:space-between;font-size:9.5px;font-weight:800;letter-spacing:.04em;color:var(--ink-3);text-transform:uppercase}
+.ntf strong{display:block;font-size:12.5px;line-height:1.3;margin-top:2px}
+.ntf svg{flex:none;width:32px;height:32px}
+
+/* chip compacto para pantallas angostas */
+.chip{display:none}
+@media (max-width:860px){
+  .phone{display:none}
+  .chip{display:flex;position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 16px);background:var(--ink);color:var(--led);border-radius:14px;padding:8px 12px;font-weight:800;font-size:18px;font-variant-numeric:tabular-nums;align-items:baseline;gap:4px}
+  .chip span{font-size:12px;color:#fff;opacity:.75}
+  .head{left:max(16px,env(safe-area-inset-left,0px));top:calc(env(safe-area-inset-top,0px) + 14px)}
+  .head b{font-size:18px}.head svg{width:36px;height:36px}
+  .cap{left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));width:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 74px);padding:14px 16px}
+  .cap h2{font-size:20px;margin-bottom:8px}
+  .cap .row{grid-template-columns:1fr;gap:2px}
+  .cap .v{font-size:14px}
+  .ctl{bottom:calc(env(safe-area-inset-bottom,0px) + 14px)}
+  .ctl .seg{min-width:34px;padding:8px 8px}
+}
+@media (max-height:700px) and (min-width:861px){.phone{transform:translateY(-50%) scale(.85);transform-origin:right center}}
+</style>
+
+</head>
+<body>
+<canvas id="gl" aria-label="Maqueta 3D de una cuadra de la Población Autoconstrucción con el camión recolector"></canvas>
+
+<header class="head">
+  <svg viewBox="0 0 42 42" aria-hidden="true"><rect width="42" height="42" rx="10" fill="#0F2A30"/><path d="M7 14h16v13H7zM23 18h6.5l5 5v4H23z" fill="#F2611D"/><path d="M25.5 20h3.2l2.8 2.8h-6z" fill="#0F2A30"/><circle cx="13" cy="28.5" r="5" fill="#fff" stroke="#0F2A30" stroke-width="2"/><path d="M13 25.8v2.7l1.9 1.2" stroke="#0F2A30" stroke-width="1.5" fill="none" stroke-linecap="round"/><circle cx="29" cy="28.5" r="3.3" fill="#fff" stroke="#0F2A30" stroke-width="2"/></svg>
+  <div><small>Mock-up con propuesta de valor</small><b>Camión a Tiempo</b></div>
+</header>
+
+<div class="chip" id="chip" aria-hidden="true"><b id="chipN">16</b><span id="chipU">min</span></div>
+
+<section class="cap" aria-live="polite">
+  <div class="st" id="capSt">Etapa 1 de 5</div>
+  <h2 id="capT">El camión inicia su ruta</h2>
+  <div class="row"><div class="k">Atributo</div><div class="v" id="capA"></div></div>
+  <div class="row"><div class="k">Propuesta de valor</div><div class="v" id="capP"></div></div>
+</section>
+
+<nav class="ctl" aria-label="Etapas de la maqueta">
+  <button class="pp" type="button" id="pp" aria-label="Pausar"><svg width="16" height="16" viewBox="0 0 16 16" id="ppIc"><rect x="3" y="2" width="3.5" height="12" fill="currentColor"/><rect x="9.5" y="2" width="3.5" height="12" fill="currentColor"/></svg></button>
+  <button class="seg" type="button" data-s="0">1<i></i></button>
+  <button class="seg" type="button" data-s="1">2<i></i></button>
+  <button class="seg" type="button" data-s="2">3<i></i></button>
+  <button class="seg" type="button" data-s="3">4<i></i></button>
+  <button class="seg" type="button" data-s="4">5<i></i></button>
+</nav>
+
+<aside class="phone" aria-label="Pantalla de la app sincronizada con la maqueta">
+  <div class="scr">
+    <div class="sb"><span id="clk">10:31</span><i></i><span>5G</span></div>
+    <div class="ab"><svg viewBox="0 0 42 42" aria-hidden="true"><rect width="42" height="42" rx="10" fill="#0F2A30"/><path d="M7 14h16v13H7zM23 18h6.5l5 5v4H23z" fill="#F2611D"/><circle cx="13" cy="28.5" r="5" fill="#fff" stroke="#0F2A30" stroke-width="2"/><circle cx="29" cy="28.5" r="3.3" fill="#fff" stroke="#0F2A30" stroke-width="2"/></svg><b>Camión a Tiempo</b></div>
+    <div class="body">
+      <div class="eta">
+        <div class="r"><span>Camión recolector</span><span>Jornada AM</span></div>
+        <div class="n" id="pn"><b id="pnB">16</b><span id="pnU">min</span></div>
+        <div class="wh" id="pw">Llega entre <em>10:42</em> y <em>10:52</em></div>
+        <div class="trk"><i id="pbar"></i></div>
+        <div class="ends"><span>Salió de la base</span><span>Tu esquina</span></div>
+      </div>
+      <div class="live"><span class="d"></span>GPS municipal en línea</div>
+      <div class="card"><span class="pin"><svg width="16" height="16" viewBox="0 0 28 28"><path d="M14 2a9 9 0 0 1 9 9c0 7-9 15-9 15S5 18 5 11a9 9 0 0 1 9-9z" fill="#F2611D"/><circle cx="14" cy="11" r="3.4" fill="#fff"/></svg></span><div><small>Mi punto de retiro</small><strong>Rubén Darío con Nicanor Parra</strong></div></div>
+      <div class="fb" id="pfb" hidden><p id="pfbQ">¿Te sirvió el aviso?</p><div class="two" id="pfbB"><span id="pyes">Sí</span><span>No</span></div></div>
+    </div>
+    <div class="tabs"><i></i><i></i><i></i><i></i></div>
+    <div class="ntf" id="ntf"><svg viewBox="0 0 42 42"><rect width="42" height="42" rx="10" fill="#0F2A30"/><path d="M7 14h16v13H7zM23 18h6.5l5 5v4H23z" fill="#F2611D"/><circle cx="13" cy="28.5" r="5" fill="#fff" stroke="#0F2A30" stroke-width="2"/><circle cx="29" cy="28.5" r="3.3" fill="#fff" stroke="#0F2A30" stroke-width="2"/></svg><div><small><span>Camión a Tiempo</span><span>ahora</span></small><strong>El camión está a 10 minutos de tu esquina. Ya puedes sacar tu bolsa.</strong></div></div>
+  </div>
+</aside>
+
+<div class="fade" id="fade"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const T_END=54;
+const STAGES=[
+  {t:0,  title:"El camión inicia su ruta",
+   a:"<b>Económica y sostenible.</b> El camión ya trae el GPS \"Copiloto\" del municipio; la app solo lee esos datos.",
+   p:"Aprovecha el GPS que el municipio ya posee, sin comprar hardware nuevo."},
+  {t:6,  title:"El vecino sabe cuándo llega",
+   a:"<b>Confiable.</b> La hora se muestra como un rango y se actualiza con el GPS oficial.",
+   p:"Elimina la incertidumbre sobre la hora de paso del camión."},
+  {t:12, title:"Aviso 10 minutos antes",
+   a:"<b>Oportuna.</b> El aviso llega antes de que el camión pase por el punto de retiro.",
+   p:"El vecino saca la bolsa en el momento justo y ahorra tiempo."},
+  {t:29, title:"Retiro a tiempo en la esquina",
+   a:"<b>Simple.</b> El vecino solo elige su esquina; la app calcula el aviso para ese punto, aunque el camión no entre al pasaje.",
+   p:"Menos residuos acumulados en la vía pública (ODS 12)."},
+  {t:40, title:"La respuesta llega al municipio",
+   a:"<b>Económica y sostenible.</b> La respuesta de los vecinos ayuda a mantener y mejorar el servicio.",
+   p:"Aseo y Ornato recibe menos reclamos por horario y monitorea el servicio con la opinión de los vecinos."}
+];
+const ARRIVE=32.5, LEAVE=36, START_MIN=10*60+31, K=16/ARRIVE;
+const fmt=m=>{m=Math.round(m);return Math.floor(m/60)+':'+String(m%60).padStart(2,'0')};
+const ss=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t)};
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+// ---------- escena ----------
+const canvas=$('gl');
+const R=new THREE.WebGLRenderer({canvas,antialias:!window.__VIDEO_NOAA,preserveDrawingBuffer:true});
+R.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+R.shadowMap.enabled=true; R.shadowMap.type=window.__VIDEO?THREE.PCFShadowMap:THREE.PCFSoftShadowMap;
+R.setClearColor(0xE2E6DF,1);
+const S=new THREE.Scene();
+S.fog=new THREE.Fog(0xE2E6DF,120,220);
+const cam=new THREE.PerspectiveCamera(30,1,0.5,400);
+S.add(new THREE.HemisphereLight(0xffffff,0xB8C0B4,0.75));
+const sun=new THREE.DirectionalLight(0xfff6e8,0.75);
+sun.position.set(-18,30,16); sun.castShadow=true;
+sun.shadow.mapSize.set(window.__VIDEO?1024:2048,window.__VIDEO?1024:2048);
+Object.assign(sun.shadow.camera,{left:-32,right:32,top:26,bottom:-26,near:1,far:90});
+sun.shadow.bias=-0.0008;
+S.add(sun);
+
+const M=c=>new THREE.MeshLambertMaterial({color:c});
+function box(w,h,d,c,x,y,z,parent){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),Array.isArray(c)?c:M(c));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;(parent||S).add(m);return m}
+function texLabel(text,opts){
+  opts=opts||{};
+  const c=document.createElement('canvas');c.width=opts.w||512;c.height=opts.h||128;
+  const g=c.getContext('2d');
+  g.fillStyle=opts.bg||'#127347';
+  const r=opts.r==null?24:opts.r; g.beginPath();g.moveTo(r,0);g.arcTo(c.width,0,c.width,c.height,r);g.arcTo(c.width,c.height,0,c.height,r);g.arcTo(0,c.height,0,0,r);g.arcTo(0,0,c.width,0,r);g.fill();
+  if(opts.border){g.strokeStyle=opts.border;g.lineWidth=8;g.stroke();}
+  g.fillStyle=opts.fg||'#fff';g.font=(opts.weight||900)+' '+(opts.size||60)+'px Overpass, Arial, sans-serif';
+  g.textAlign='center';g.textBaseline='middle';
+  if(opts.ls) try{g.letterSpacing=opts.ls}catch(e){}
+  g.fillText(text,c.width/2,c.height/2+4);
+  const t=new THREE.CanvasTexture(c); t.anisotropy=4; return t;
+}
+const LABELS=[];
+function sprite(text,opts,sx,sy,x,y,z){
+  const mat=new THREE.SpriteMaterial({map:texLabel(text,opts),depthTest:false});
+  LABELS.push([mat,text,opts]);
+  const s=new THREE.Sprite(mat);s.scale.set(sx,sy,1);s.position.set(x,y,z);s.renderOrder=10;S.add(s);return s;
+}
+
+// tablero de maqueta
+const CARD=M(0xCDBB98), TOP=M(0xD9DED5);
+box(46,1.4,34,[CARD,CARD,TOP,CARD,CARD,CARD],0,-0.7,-2).castShadow=false;
+// manzanas
+box(46,0.08,14.5,0xCFD8CB,0,0.04,-11.25);
+box(46,0.08,8.5,0xCFD8CB,0,0.04,10.75);
+// calle Rubén Darío
+box(46,0.12,6,0x3A4B4F,0,0.06,2);
+for(let x=-21;x<23;x+=4) box(2,0.02,0.22,0xC9D0C6,x,0.13,2);
+// veredas
+box(46,0.24,1.6,0xBCC3B8,0,0.12,-1.8);
+box(46,0.24,1.6,0xBCC3B8,0,0.12,5.8);
+// pasaje Nicanor Parra
+box(2.6,0.16,9.6,0xA9B0A5,4,0.08,-7.4);
+// franja de recorrido (verde) sobre la calle
+const greenMat=new THREE.MeshBasicMaterial({color:0x127347});
+const green=new THREE.Mesh(new THREE.BoxGeometry(1,0.04,0.42),greenMat);green.position.set(0,0.15,-0.78);S.add(green);
+const orangeAhead=new THREE.Mesh(new THREE.BoxGeometry(1,0.03,0.22),new THREE.MeshBasicMaterial({color:0xF2611D,transparent:true,opacity:.55}));orangeAhead.position.set(0,0.15,-0.78);S.add(orangeAhead);
+
+// casas
+const WALLS=[0x7FA9A0,0xE2B08A,0xCBD2C4,0x9DB8C0,0xB7C2A2,0xD8B9A8,0xA9C2B6];
+const ZINC=M(0x7E8B8D), INKM=M(0x0F2A30), LEDM=new THREE.MeshBasicMaterial({color:0xFFB21A}), WINM=M(0x55707A);
+function roof(w,d,h,x,y,z,rot){
+  const sh=new THREE.Shape();sh.moveTo(-w/2-0.35,0);sh.lineTo(w/2+0.35,0);sh.lineTo(0,h);sh.lineTo(-w/2-0.35,0);
+  const g=new THREE.ExtrudeGeometry(sh,{depth:d+0.5,bevelEnabled:false});g.translate(0,0,-(d+0.5)/2);
+  const m=new THREE.Mesh(g,ZINC);m.position.set(x,y,z);m.rotation.y=rot||0;m.castShadow=true;m.receiveShadow=true;S.add(m);return m;
+}
+function house(x,z,w,d,h,ci,face,lit){
+  // face: +1 mira hacia +z, -1 hacia -z, 2 hacia +x, -2 hacia -x
+  const g=new THREE.Group();g.position.set(x,0,z);S.add(g);
+  const rot=face===1?0:face===-1?Math.PI:face===2?Math.PI/2:-Math.PI/2;
+  g.rotation.y=rot;
+  const wall=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(WALLS[ci%WALLS.length]));wall.position.y=h/2;wall.castShadow=true;wall.receiveShadow=true;g.add(wall);
+  const rf=new THREE.Shape();rf.moveTo(-w/2-0.35,0);rf.lineTo(w/2+0.35,0);rf.lineTo(0,1.3);rf.lineTo(-w/2-0.35,0);
+  const rg=new THREE.ExtrudeGeometry(rf,{depth:d+0.5,bevelEnabled:false});rg.translate(0,0,-(d+0.5)/2);
+  const r=new THREE.Mesh(rg,ZINC);r.position.y=h;r.castShadow=true;g.add(r);
+  const door=new THREE.Mesh(new THREE.BoxGeometry(0.8,1.6,0.06),INKM);door.position.set(w*0.25,0.8,d/2+0.03);g.add(door);
+  const win=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.8,0.06),lit?LEDM:WINM);win.position.set(-w*0.2,h*0.58,d/2+0.03);g.add(win);
+  const fr=new THREE.Mesh(new THREE.BoxGeometry(1.16,0.96,0.04),INKM);fr.position.set(-w*0.2,h*0.58,d/2+0.015);g.add(fr);
+  return g;
+}
+// fila posterior (frente a la calle)
+[[-19,0,true],[-13.5,1,false],[-8,2,true],[-2.5,3,false],[9.5,4,true],[15,5,false],[20.5,6,true]].forEach(([x,ci,l])=>house(x,-5.2,4.6,4.2,2.6,ci,1,l));
+// pasaje: casas a ambos lados
+house(0.7,-10.2,3.6,3.6,2.4,4,2,true);
+house(7.3,-10.2,3.6,3.6,2.4,1,-2,true);   // casa de la vecina
+house(0.7,-14.4,3.6,3.6,2.4,6,2,false);
+house(7.3,-14.4,3.6,3.6,2.4,3,-2,false);
+// fila de enfrente
+[[-18,2],[-11.5,0],[-5,5],[1.5,6],[8,1],[14.5,4],[21,2]].forEach(([x,ci],i)=>house(x,10,4.8,4.2,2.6,ci,-1,i%2===0));
+// municipio (Aseo y Ornato)
+box(7,3.6,5,0xF1F3F2,-16.5,1.8,-13.5);
+box(7.4,0.4,5.4,0x0F2A30,-16.5,3.8,-13.5);
+box(5.4,0.9,0.06,0x127347,-16.5,2.7,-10.97);
+for(let i=0;i<4;i++) box(1,1.2,0.06,0x55707A,-19.2+i*1.8,1.2,-10.97);
+sprite('Aseo y Ornato',{bg:'#0F2A30',fg:'#fff',size:58,w:640},6.2,1.24,-16.5,6.1,-13.5);
+// árboles
+function tree(x,z,s){const t=box(0.35*s,1.4*s,0.35*s,0x6E523C,x,0.7*s,z);const c=new THREE.Mesh(new THREE.IcosahedronGeometry(1.25*s,0),M(0x6F8C7C));c.position.set(x,1.9*s,z);c.castShadow=true;S.add(c);}
+[[-21.5,-9],[-10.8,-9.5],[12.5,-10],[18,-12.5],[-4,-13.5],[-21,13.5],[-8,13.6],[4.8,13.5],[17.5,13.6],[11.5,-15.5]].forEach(([x,z],i)=>tree(x,z,0.9+((i*37)%5)/10));
+
+// letrero de calle
+box(0.16,3.2,0.16,0x5E676A,2.4,1.6,-1.6);
+const plateMat=new THREE.MeshBasicMaterial({map:texLabel('RUBÉN DARÍO',{bg:'#127347',fg:'#fff',size:62,border:'#FBFCF8',r:14})});
+LABELS.push([plateMat,'RUBÉN DARÍO',{bg:'#127347',fg:'#fff',size:62,border:'#FBFCF8',r:14}]);
+box(3.4,0.85,0.08,[M(0x127347),M(0x127347),M(0x127347),M(0x127347),plateMat,plateMat],2.4,3.3,-1.6);
+
+// punto de retiro
+const ring=new THREE.Mesh(new THREE.RingGeometry(0.7,1.0,40),new THREE.MeshBasicMaterial({color:0xF2611D,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(6.2,0.26,-1.9);S.add(ring);
+const pinG=new THREE.Group();S.add(pinG);
+const pinHead=new THREE.Mesh(new THREE.SphereGeometry(0.42,20,14),new THREE.MeshLambertMaterial({color:0xF2611D}));pinHead.position.y=0.62;pinG.add(pinHead);
+const pinCone=new THREE.Mesh(new THREE.ConeGeometry(0.33,0.7,20),new THREE.MeshLambertMaterial({color:0xF2611D}));pinCone.rotation.x=Math.PI;pinCone.position.y=0.18;pinG.add(pinCone);
+const pinDot=new THREE.Mesh(new THREE.SphereGeometry(0.16,12,10),new THREE.MeshBasicMaterial({color:0xffffff}));pinDot.position.set(0,0.66,0.34);pinG.add(pinDot);
+const pinLbl=sprite('Punto de retiro',{bg:'#F2611D',fg:'#fff',size:56,w:600},4.6,1.0,6.2,4.3,-1.9);
+
+// vecina
+const vec=new THREE.Group();S.add(vec);
+(function(){
+  const legs=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.22,0.7,10),M(0x22302F));legs.position.y=0.35;vec.add(legs);
+  const coat=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.42,0.9,12),M(0x1F4F57));coat.position.y=1.1;vec.add(coat);
+  const scarf=new THREE.Mesh(new THREE.TorusGeometry(0.2,0.08,8,16),M(0xFFB21A));scarf.rotation.x=Math.PI/2;scarf.position.y=1.55;vec.add(scarf);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.27,16,12),M(0xD29C78));head.position.y=1.85;vec.add(head);
+  const hair=new THREE.Mesh(new THREE.SphereGeometry(0.29,16,12,0,Math.PI*2,0,Math.PI/2),M(0x2A1C17));hair.position.y=1.88;vec.add(hair);
+  const bun=new THREE.Mesh(new THREE.SphereGeometry(0.13,10,8),M(0x2A1C17));bun.position.set(0,2.1,-0.18);vec.add(bun);
+  vec.traverse(o=>{if(o.isMesh){o.castShadow=true}});
+})();
+// bolsa
+const bag=new THREE.Group();S.add(bag);
+(function(){const b=new THREE.Mesh(new THREE.SphereGeometry(0.34,14,10),M(0x141819));b.scale.set(1,1.15,1);b.position.y=0.36;bag.add(b);const k=new THREE.Mesh(new THREE.ConeGeometry(0.1,0.24,8),M(0x141819));k.position.y=0.82;bag.add(k);bag.traverse(o=>{if(o.isMesh)o.castShadow=true});})();
+
+// camión
+const truck=new THREE.Group();S.add(truck);
+const WH=0xEEF1EE, AQ=0x3BAA8E;
+(function(){
+  const add=(w,h,d,c,x,y,z)=>{const m=box(w,h,d,c,x,y,z,truck);return m};
+  add(2.0,2.0,2.3,WH,2.6,1.55,0);            // cabina
+  add(0.06,0.9,1.9,0x3A4B4F,3.62,1.95,0);   // parabrisas
+  add(1.2,0.7,0.06,0x3A4B4F,2.5,1.95,1.16); add(1.2,0.7,0.06,0x3A4B4F,2.5,1.95,-1.16);
+  add(2.04,0.28,2.34,AQ,2.6,0.95,0);
+  add(4.6,2.7,2.4,WH,-0.85,1.9,0);           // caja
+  add(4.2,1.9,0.06,AQ,-0.85,2.0,1.22); add(4.2,1.9,0.06,AQ,-0.85,2.0,-1.22);
+  add(1.0,2.4,2.4,0xD9DEDB,-3.6,1.75,0);     // tolva
+  add(0.06,1.2,1.8,0x3A4B4F,-4.12,1.5,0);
+  add(7.4,0.4,2.0,0x3A4447,-0.6,0.55,0);     // chasis
+  [[2.4,1.05],[-1.6,1.05],[-2.9,1.05],[2.4,-1.05],[-1.6,-1.05],[-2.9,-1.05]].forEach(([x,z])=>{
+    const w=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,0.4,18),M(0x1B2023));w.rotation.x=Math.PI/2;w.position.set(x,0.55,z);w.castShadow=true;truck.add(w);
+    const h=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.24,0.42,12),M(0x9AA3A7));h.rotation.x=Math.PI/2;h.position.set(x,0.55,z);truck.add(h);
+  });
+  add(0.3,0.3,0.3,0xF2611D,2.6,2.7,0);       // baliza GPS
+})();
+const gpsRings=[0,1,2].map(()=>{const r=new THREE.Mesh(new THREE.TorusGeometry(0.6,0.05,8,40),new THREE.MeshBasicMaterial({color:0xF2611D,transparent:true}));r.rotation.x=Math.PI/2;S.add(r);return r});
+const gpsLbl=sprite('GPS Copiloto',{bg:'#0F2A30',fg:'#FFB21A',size:56,w:560},4.2,0.95,0,5.4,0);
+
+// arco de datos hacia el municipio
+const arcCurve=new THREE.QuadraticBezierCurve3(new THREE.Vector3(7.3,2.6,-10.2),new THREE.Vector3(-5,11,-13),new THREE.Vector3(-16.5,4.2,-13.5));
+const arcLine=new THREE.Mesh(new THREE.TubeGeometry(arcCurve,60,0.06,6,false),new THREE.MeshBasicMaterial({color:0x127347,transparent:true,opacity:0}));S.add(arcLine);
+const arcDots=[0,1,2,3].map(()=>{const d=new THREE.Mesh(new THREE.SphereGeometry(0.28,12,10),new THREE.MeshBasicMaterial({color:0x127347}));S.add(d);return d});
+const thanks=sprite('¡Me sirvió el aviso!',{bg:'#127347',fg:'#fff',size:52,w:620},5,1.0,7.3,5.6,-10.2);
+
+// ---------- estado en función del tiempo ----------
+function truckX(t){
+  const v=33/(ARRIVE-3);
+  if(t<=ARRIVE-3) return -26+v*t;
+  if(t<=ARRIVE){const u=t-(ARRIVE-3);return 7+v*u-v*u*u/6}
+  const stop=7+v*1.5;
+  if(t<=LEAVE) return stop;
+  return stop+Math.pow((t-LEAVE)/10,1.4)*24;
+}
+const VPATH=[[13,5.0,-9.3],[14.5,4.0,-9.3],[19.5,4.0,-2.9],[21,5.5,-2.3],[23.5,5.5,-2.3],[25,4.0,-2.9],[29,4.0,-9.3],[30,5.0,-9.3]];
+function vecPos(t){
+  if(t<VPATH[0][0]) return {x:VPATH[0][1],z:VPATH[0][2],vis:t>=12.4,walk:false,ry:Math.PI/2*-1};
+  for(let i=0;i<VPATH.length-1;i++){const a=VPATH[i],b=VPATH[i+1];
+    if(t<=b[0]){const k=(t-a[0])/(b[0]-a[0]);const dx=b[1]-a[1],dz=b[2]-a[2];const moving=Math.hypot(dx,dz)>0.01;
+      return {x:lerp(a[1],b[1],k),z:lerp(a[2],b[2],k),vis:true,walk:moving,ry:moving?Math.atan2(dx,dz):0}}}
+  const l=VPATH[VPATH.length-1];return {x:l[1],z:l[2],vis:t<T_END-1.5,walk:false,ry:0};
+}
+const CAMK=[
+  [0,  [-26,0,6], 54, -0.5],
+  [6,  [-17,0,6], 54, -0.4],
+  [10, [-13,0,6], 54, -0.36],
+  [14, [3,0,-5],  46, -0.28],
+  [27, [5,0,-3],  44, -0.14],
+  [37, [6,0,-1],  48,  0.0],
+  [42, [-4,0,-5], 62,  0.12],
+  [T_END,[-8,0,-2],66, 0.2]
+];
+function camAt(t){
+  let i=0;while(i<CAMK.length-2&&t>CAMK[i+1][0])i++;
+  const a=CAMK[i],b=CAMK[i+1];const k=ss(a[0],b[0],t);
+  const tg=a[1].map((v,j)=>lerp(v,b[1][j],k));const rad=lerp(a[2],b[2],k);const az=lerp(a[3],b[3],k);
+  const el=0.86;
+  return {tg,pos:[tg[0]+rad*Math.sin(az)*Math.cos(el),tg[1]+rad*Math.sin(el),tg[2]+rad*Math.cos(az)*Math.cos(el)]};
+}
+function stageAt(t){let s=0;STAGES.forEach((st,i)=>{if(t>=st.t)s=i});return s}
+
+let lastStage=-1;
+function apply(t){
+  // camión
+  const tx=truckX(t); truck.position.set(tx,0,0.6);
+  gpsRings.forEach((r,i)=>{const p=((t*0.7+i/3)%1);r.position.set(tx+2.6,2.9+p*1.6,0.6);r.scale.setScalar(0.6+p*2.2);r.material.opacity=(1-p)*0.8});
+  gpsLbl.position.set(tx+2.6,6.3,0.6); gpsLbl.material.opacity=t<12?1:Math.max(0,1-(t-12)/1.5);
+  // recorrido
+  const x0=-23, len=Math.max(0.01,Math.min(tx,23)-x0); green.scale.x=len; green.position.x=x0+len/2;
+  const aLen=Math.max(0.01,23-Math.min(tx,23)); orangeAhead.scale.x=aLen; orangeAhead.position.x=23-aLen/2;
+  // punto de retiro
+  const bob=Math.sin(t*3)*0.18; pinG.position.set(6.2,2.6+bob,-1.9); pinLbl.position.y=4.3+bob;
+  ring.scale.setScalar(1+0.12*Math.sin(t*4));
+  pinLbl.material.opacity=(t>12&&t<36)?1:0.0;
+  // vecina y bolsa
+  const v=vecPos(t); vec.visible=v.vis; vec.position.set(v.x,v.walk?Math.abs(Math.sin(t*9))*0.12:0,v.z); vec.rotation.y=v.ry;
+  if(t<21.5){ bag.visible=t>=12.4; bag.position.set(v.x+0.45*Math.cos(v.ry),0.2+(v.walk?Math.abs(Math.sin(t*9))*0.12:0),v.z-0.45*Math.sin(v.ry)); bag.scale.setScalar(0.7);}
+  else if(t<33.6){ bag.visible=true; bag.position.set(6.6,0.24,-2.2); bag.scale.setScalar(1);}
+  else if(t<35){ const k=ss(33.6,35,t); bag.visible=true; bag.position.set(lerp(6.6,tx-3.6,k),0.24+Math.sin(k*Math.PI)*2.4+k*0.6,lerp(-2.2,0.6,k)); bag.scale.setScalar(1-k*0.4);}
+  else bag.visible=false;
+  // arco de datos
+  const arcOn=ss(42.5,43.5,t)*(1-ss(T_END-2,T_END-1,t));
+  arcLine.material.opacity=arcOn*0.55;
+  arcDots.forEach((d,i)=>{const p=((t-43)*0.35+i/4)%1;d.visible=arcOn>0.05&&t>43;if(d.visible)d.position.copy(arcCurve.getPoint(Math.max(0,p)))});
+  thanks.material.opacity=ss(42.6,43.2,t)*(1-ss(50,51,t)); thanks.position.y=5.6+Math.sin(t*2)*0.12;
+  // cámara
+  const c=camAt(t); cam.position.set(...c.pos); cam.lookAt(...c.tg);
+  // fundido de inicio y fin
+  $('fade').style.opacity=Math.max(1-ss(0,0.8,t), ss(T_END-0.8,T_END,t)).toFixed(3);
+
+  // teléfono
+  const now=START_MIN+t*K; $('clk').textContent=fmt(Math.floor(now));
+  const rem=(ARRIVE-t)*K;
+  const pn=$('pn');
+  if(t<ARRIVE-0.6){
+    pn.className='n'; $('pnB').textContent=Math.ceil(rem); $('pnU').textContent='min';
+    const m=Math.max(1,Math.min(5,Math.round(rem*0.3)));
+    $('pw').innerHTML='Llega entre <em>'+fmt(START_MIN+16-m)+'</em> y <em>'+fmt(START_MIN+16+m)+'</em>';
+    $('chipN').textContent=Math.ceil(rem); $('chipU').textContent='min';
+  }else if(t<LEAVE){
+    pn.className='n w'; $('pnB').textContent='Llegando'; $('pnU').textContent=''; $('pw').textContent='El camión está en tu esquina';
+    $('chipN').textContent='Llegando'; $('chipU').textContent='';
+  }else{
+    pn.className='n w'; $('pnB').textContent='Pasó'; $('pnU').textContent='a las '+fmt(START_MIN+16); $('pw').textContent='Próxima recolección: sábado AM';
+    $('chipN').textContent='Pasó'; $('chipU').textContent=fmt(START_MIN+16);
+  }
+  $('pbar').style.width=(Math.min(1,t/ARRIVE)*100).toFixed(1)+'%';
+  const nk=ss(12.2,12.7,t)*(1-ss(17.5,18,t)); $('ntf').style.transform='translateY('+((1-nk)*-160).toFixed(1)+'%)';
+  $('pfb').hidden=t<40;
+  if(t>=43){ $('pfbQ').textContent='Gracias. Tu respuesta ayuda a mejorar el servicio.'; $('pfbB').hidden=true; }
+  else { $('pfbQ').textContent='¿Te sirvió el aviso?'; $('pfbB').hidden=false; $('pyes').classList.toggle('tap',t>42); }
+
+  // recuadro de etapa
+  const s=stageAt(t);
+  if(s!==lastStage){lastStage=s;const st=STAGES[s];
+    $('capSt').textContent='Etapa '+(s+1)+' de 5'; $('capT').textContent=st.title; $('capA').innerHTML=st.a; $('capP').textContent=st.p;
+    document.querySelectorAll('.seg').forEach((b,i)=>b.setAttribute('aria-current',i===s));
+  }
+  document.querySelectorAll('.seg').forEach((b,i)=>{const a=STAGES[i].t,e=i<4?STAGES[i+1].t:T_END;b.querySelector('i').style.width=(Math.min(1,Math.max(0,(t-a)/(e-a)))*100)+'%'});
+}
+
+// ---------- tamaño y bucle ----------
+function resize(){
+  const w=window.innerWidth,h=window.innerHeight; R.setSize(w,h,false);
+  cam.aspect=w/h;
+  if(w>860){cam.setViewOffset(w,h,Math.min(190,w*0.12),-h*0.04,w,h)}else{cam.clearViewOffset()}
+  cam.updateProjectionMatrix();
+}
+window.addEventListener('resize',resize); resize();
+
+let t=0, playing=!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches), last=performance.now(), frozen=false;
+function setPP(){ $('pp').setAttribute('aria-label',playing?'Pausar':'Reproducir'); $('ppIc').innerHTML=playing?'<rect x="3" y="2" width="3.5" height="12" fill="currentColor"/><rect x="9.5" y="2" width="3.5" height="12" fill="currentColor"/>':'<path d="M4 2l10 6-10 6z" fill="currentColor"/>'; }
+$('pp').onclick=()=>{playing=!playing;setPP()};
+document.querySelectorAll('.seg').forEach(b=>b.onclick=()=>{t=STAGES[+b.dataset.s].t+(b.dataset.s==='0'?0.9:0.01)});
+setPP();
+function loop(now){
+  if(!frozen){const dt=Math.min(0.1,(now-last)/1000);last=now;if(playing){t+=dt;if(t>=T_END)t=0}}
+  apply(t); R.render(S,cam); requestAnimationFrame(loop);
+}
+apply(0.9); R.render(S,cam); t=0.9;
+requestAnimationFrame(loop);
+function redrawLabels(){LABELS.forEach(([m,txt,o])=>{const old=m.map;m.map=texLabel(txt,o);m.needsUpdate=true;if(old)old.dispose()})}
+if(document.fonts&&document.fonts.load){Promise.all([document.fonts.load('900 60px Overpass'),document.fonts.load('800 60px Overpass')]).then(redrawLabels).catch(()=>{})}
+// captura cuadro a cuadro (uso interno para generar el video)
+window.__mock={freeze(){frozen=true},frame(x){t=x;apply(x);R.render(S,cam)},T_END};
+})();
+</script>
+
+</body>
+</html>

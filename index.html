@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Camión a Tiempo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: en el teléfono la app ocupa toda la pantalla; en el computador se muestra dentro de un teléfono, con el contexto del prototipo a la izquierda y los atributos a la derecha. */
+:root{
+  --ink:#0F2A30;        /* azul petróleo: texto y panel */
+  --ink-2:#47595D;      /* texto secundario */
+  --ink-3:#7A8A8D;      /* texto terciario */
+  --bg:#F3F5F4;         /* fondo de la app */
+  --surface:#FFFFFF;
+  --hair:#DCE2DF;       /* bordes finos */
+  --vest:#F2611D;       /* naranja recolector: camión y punto */
+  --led:#FFB21A;        /* ámbar del letrero del paradero */
+  --sign:#127347;       /* verde letrero de calle: ya pasó */
+  --sign-soft:#E3F1EA;
+  --map:#E8ECEA; --street:#FFFFFF; --casing:#D3DAD7;
+  --stage:#D9DFDC;
+  --sans:"Overpass",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"Overpass Mono",ui-monospace,Menlo,monospace;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--stage);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--vest);outline-offset:2px}
+
+.stage{height:100%;display:flex;align-items:center;justify-content:center;gap:48px}
+.side{display:none}
+
+/* teléfono */
+.device{position:relative;width:100%;height:100%}
+.screen{position:relative;height:100%;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;font-size:16px}
+.screen.large{font-size:18.5px}
+.statusbar{display:none}
+
+@media (min-width:720px){
+  .stage{padding:24px max(24px,env(safe-area-inset-right,0px)) 24px max(24px,env(safe-area-inset-left,0px))}
+  .device{width:404px;height:min(860px,calc(100vh - 48px));flex:none;background:#0B1416;border-radius:56px;padding:12px;box-shadow:0 30px 60px rgba(15,42,48,.25),inset 0 0 0 2px #2A3538}
+  .screen{border-radius:44px}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:14px 30px 4px;font-size:15px;font-weight:700;flex:none}
+  .statusbar .isl{width:110px;height:30px;background:#0B1416;border-radius:20px}
+}
+@media (min-width:1180px){
+  .side{display:flex;flex-direction:column;gap:18px;width:300px;flex:none}
+}
+
+/* paneles laterales (solo escritorio) */
+.side .eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
+.side h1{margin:0;font-size:40px;line-height:1;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+.side p{margin:0;font-size:15.5px;line-height:1.5;color:var(--ink-2)}
+.side .ctrl{display:flex;gap:8px;flex-wrap:wrap}
+.side .ctrl button{border:1px solid var(--ink);background:transparent;border-radius:10px;padding:10px 14px;font-weight:700;font-size:14px;cursor:pointer}
+.side .ctrl button.primary{background:var(--ink);color:#fff}
+.side small{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+.attrs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.attrs li{border:1px solid #C5CECA;border-radius:12px;padding:12px 14px;background:rgba(255,255,255,.35);transition:background .3s,border-color .3s}
+.attrs li b{display:flex;align-items:center;gap:8px;font-size:15px}
+.attrs li b::before{content:"";width:9px;height:9px;border-radius:50%;background:#B7C1BD;transition:background .3s}
+.attrs li span{display:block;font-size:13.5px;line-height:1.45;color:var(--ink-2);margin-top:4px}
+.attrs li.on{background:#fff;border-color:var(--ink)}
+.attrs li.on b::before{background:var(--vest)}
+
+/* barra superior de la app */
+.appbar{display:flex;align-items:center;gap:10px;padding:10px 18px 10px;flex:none;background:var(--bg)}
+.mark{width:34px;height:34px;flex:none}
+.appbar .t{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+.appbar .t b{font-size:1.06em;font-weight:800;letter-spacing:-.01em}
+.appbar .t span{font-size:.78em;color:var(--ink-2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.demo-chip{margin-left:auto;border:1px solid var(--hair);background:var(--surface);border-radius:999px;padding:6px 11px;font-size:.75em;font-weight:700;letter-spacing:.06em;color:var(--ink-2);cursor:pointer}
+@media (min-width:1180px){.demo-chip{display:none}}
+.demo-menu{position:absolute;right:14px;top:58px;z-index:25;background:var(--surface);border:1px solid var(--hair);border-radius:14px;box-shadow:0 12px 30px rgba(15,42,48,.18);padding:6px;display:flex;flex-direction:column;min-width:210px}
+@media (min-width:720px){.demo-menu{top:96px}}
+.demo-menu button{background:none;border:0;text-align:left;padding:11px 12px;border-radius:9px;font-weight:600;font-size:.94em;cursor:pointer}
+.demo-menu button:hover{background:var(--bg)}
+.demo-menu small{padding:6px 12px 8px;color:var(--ink-3);font-size:.75em}
+
+/* vistas */
+.views{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 16px 20px;display:flex;flex-direction:column;gap:12px}
+.view{display:flex;flex-direction:column;gap:12px}
+.h2{margin:6px 2px 0;font-size:1.5em;font-weight:800;letter-spacing:-.015em}
+.lead{margin:0 2px;color:var(--ink-2);font-size:.92em;line-height:1.45}
+.card{background:var(--surface);border:1px solid var(--hair);border-radius:16px}
+
+/* panel de llegada */
+.eta{background:var(--ink);color:#fff;border-radius:18px;padding:16px 18px 16px;position:relative;overflow:hidden}
+.eta::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,rgba(255,178,26,.06) 1px,transparent 1.3px);background-size:5px 5px}
+.eta>*{position:relative;z-index:1}
+.eta .row{display:flex;justify-content:space-between;font-size:.74em;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.eta .num{display:flex;align-items:baseline;gap:8px;margin:6px 0 2px;color:var(--led);font-variant-numeric:tabular-nums}
+.eta .num b{font-size:4.1em;font-weight:800;line-height:1;letter-spacing:-.03em}
+.eta .num span{font-size:1.4em;font-weight:700}
+.eta .num.word b{font-size:2.6em;letter-spacing:-.02em}
+.eta .when{font-size:1em;font-weight:600}
+.eta .when em{font-style:normal;color:var(--led)}
+.prog{margin-top:14px}
+.track{height:6px;border-radius:3px;background:rgba(255,255,255,.16);position:relative}
+.track i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--led);width:0}
+.track u{position:absolute;right:-3px;top:-4px;width:14px;height:14px;border-radius:50%;background:var(--ink);border:3px solid var(--vest)}
+.prog .ends{display:flex;justify-content:space-between;margin-top:7px;font-size:.72em;color:rgba(255,255,255,.65);font-weight:600}
+
+.live{display:flex;align-items:center;gap:8px;font-size:.8em;color:var(--ink-2);padding:0 4px;flex-wrap:wrap}
+.live .dot{width:8px;height:8px;border-radius:50%;background:var(--sign);box-shadow:0 0 0 3px var(--sign-soft)}
+.live .sep{color:var(--hair)}
+
+/* mapa */
+.mapcard{overflow:hidden}
+.mapcard header{display:flex;justify-content:space-between;align-items:center;padding:12px 14px 10px;gap:8px}
+.mapcard header b{font-size:.95em}
+.legend{display:flex;gap:10px;font-size:.72em;color:var(--ink-2);font-weight:600}
+.legend i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.mapcard svg{display:block;width:100%;height:auto;background:var(--map)}
+
+/* filas */
+.rowcard{display:flex;align-items:center;gap:12px;padding:13px 14px}
+.rowcard .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none;background:var(--bg)}
+.rowcard div{min-width:0;flex:1}
+.rowcard small{display:block;font-size:.72em;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.rowcard strong{display:block;font-size:.98em;font-weight:700;line-height:1.3}
+.rowcard p{margin:2px 0 0;font-size:.85em;color:var(--ink-2);line-height:1.4}
+.txtbtn{background:none;border:0;font-weight:700;font-size:.9em;color:var(--sign);cursor:pointer;padding:6px}
+.notice{border-color:#F1D9A6;background:#FFF8E8}
+.notice .ic{background:#FCEBC4}
+
+.cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:1px solid var(--ink);background:var(--surface);border-radius:14px;padding:14px;font-weight:700;font-size:.98em;cursor:pointer}
+
+.fb{background:var(--sign);color:#fff;border-radius:16px;padding:14px 16px}
+.fb p{margin:0 0 10px;font-weight:700;font-size:1.05em}
+.fb .two{display:flex;gap:10px}
+.fb button{flex:1;border-radius:12px;padding:11px;font-weight:800;font-size:1em;border:1px solid rgba(255,255,255,.8);background:transparent;color:#fff;cursor:pointer}
+.fb button:first-child{background:#fff;color:var(--sign)}
+
+/* calendario */
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:14px}
+.day{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:.78em;font-weight:700;color:var(--ink-3)}
+.day span{width:100%;aspect-ratio:1;max-width:44px;border-radius:12px;display:grid;place-items:center;background:var(--bg);color:var(--ink-3);font-size:.95em}
+.day.on span{background:var(--ink);color:var(--led)}
+.day.today{color:var(--ink)}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--hair);font-size:.92em}
+.list li:first-child{border-top:0}
+.list li span{color:var(--ink-2)}
+.list li b{font-variant-numeric:tabular-nums}
+.tag{font-size:.75em;font-weight:700;border-radius:999px;padding:4px 9px;background:var(--bg);color:var(--ink-2);white-space:nowrap}
+.tag.ok{background:var(--sign-soft);color:var(--sign)}
+.tag.new{background:#FDE7DB;color:#B4410D}
+.note{font-size:.75em;color:var(--ink-3);margin:0 4px}
+
+/* ajustes */
+.set{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border-top:1px solid var(--hair)}
+.set:first-child{border-top:0}
+.set div{min-width:0}
+.set strong{display:block;font-size:.96em}
+.set p{margin:2px 0 0;font-size:.82em;color:var(--ink-2);line-height:1.4}
+.sw{width:50px;height:30px;border-radius:15px;border:0;background:#C9D1CE;position:relative;cursor:pointer;flex:none;transition:background .2s}
+.sw::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .2s}
+.sw[aria-checked="true"]{background:var(--sign)}
+.sw[aria-checked="true"]::after{transform:translateX(20px)}
+.seg{display:flex;background:var(--bg);border-radius:11px;padding:3px;gap:3px;margin:0 14px 14px}
+.seg button{flex:1;border:0;background:none;border-radius:9px;padding:9px 0;font-weight:700;font-size:.92em;cursor:pointer;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(15,42,48,.15)}
+
+/* barra de pestañas */
+.tabs{flex:none;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--hair);padding:6px 6px 8px}
+@media (min-width:720px){.tabs{padding-bottom:22px}}
+.tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;font-size:.7em;font-weight:700;color:var(--ink-3);cursor:pointer}
+.tabs button svg{width:24px;height:24px}
+.tabs button[aria-selected="true"]{color:var(--ink)}
+.tabs button[aria-selected="true"] svg{color:var(--vest)}
+
+/* notificación simulada */
+.notif{position:absolute;left:10px;right:10px;top:8px;z-index:30;transform:translateY(-150%);transition:transform .45s cubic-bezier(.2,.9,.25,1)}
+@media (min-width:720px){.notif{top:48px}}
+.notif.show{transform:none}
+.notif .card{display:flex;gap:11px;padding:11px 13px;border-radius:20px;background:rgba(250,251,250,.97);box-shadow:0 12px 30px rgba(15,42,48,.25);border:0}
+.notif .card div{min-width:0}
+.notif small{display:flex;justify-content:space-between;font-size:.72em;color:var(--ink-3);font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.notif strong{display:block;font-size:.92em;line-height:1.3;margin-top:2px}
+
+/* hojas inferiores */
+.scrim{position:absolute;inset:0;z-index:35;background:rgba(15,42,48,.4);display:flex;align-items:flex-end}
+.sheet{width:100%;background:var(--bg);border-radius:22px 22px 0 0;padding:10px 16px 18px;display:flex;flex-direction:column;gap:10px;max-height:88%;overflow:auto}
+@media (min-width:720px){.sheet{padding-bottom:30px}}
+.grab{width:40px;height:5px;border-radius:3px;background:#C5CDCA;margin:0 auto 4px}
+.sheet h3{margin:0;font-size:1.25em;font-weight:800}
+.sheet p{margin:0;color:var(--ink-2);font-size:.88em;line-height:1.45}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;align-items:center;gap:10px;text-align:left;border:1px solid var(--hair);background:var(--surface);border-radius:12px;padding:12px 14px;font-weight:600;font-size:.94em;cursor:pointer}
+.opt::before{content:"";width:18px;height:18px;border-radius:50%;border:2px solid #B9C3BF;flex:none}
+.opt[aria-pressed="true"]{border-color:var(--ink)}
+.opt[aria-pressed="true"]::before{border:6px solid var(--ink)}
+.primary-btn{border:0;background:var(--ink);color:#fff;border-radius:14px;padding:15px;font-weight:800;font-size:1em;cursor:pointer}
+.primary-btn:disabled{opacity:.35;cursor:default}
+.ghost{border:0;background:none;font-weight:700;color:var(--ink-2);padding:8px;cursor:pointer}
+
+.toast{position:absolute;left:50%;bottom:86px;transform:translateX(-50%);z-index:40;background:var(--ink);color:#fff;border-radius:12px;padding:10px 14px;font-size:.85em;font-weight:600;width:max-content;max-width:calc(100% - 32px)}
+@media (min-width:720px){.toast{bottom:100px}}
+
+@media (prefers-reduced-motion:reduce){.notif{transition:none}.pulse{display:none}}
+</style>
+
+</head>
+<body>
+<div class="stage">
+  <aside class="side" aria-label="Sobre el prototipo">
+    <span class="eyebrow">Prototipo navegable</span>
+    <h1>Camión a Tiempo</h1>
+    <p>Simulación de una jornada AM en la Población Autoconstrucción de Valdivia. El camión recorre Rubén Darío con datos simulados del GPS municipal y avisa al vecino antes de llegar a su esquina.</p>
+    <div class="ctrl"><button class="primary" type="button" data-act="restart">Reiniciar recorrido</button><button type="button" data-act="sound">Activar sonido</button></div>
+    <small>1 segundo equivale a 30 segundos del recorrido</small>
+  </aside>
+
+  <div class="device">
+    <div class="screen" id="screen">
+      <div class="statusbar" aria-hidden="true"><span id="sbTime">10:33</span><span class="isl"></span><span>5G ▮▮▮</span></div>
+
+      <header class="appbar">
+        <svg class="mark" viewBox="0 0 42 42" aria-hidden="true">
+          <rect width="42" height="42" rx="10" fill="#0F2A30"/>
+          <path d="M7 14h16v13H7zM23 18h6.5l5 5v4H23z" fill="#F2611D"/>
+          <path d="M25.5 20h3.2l2.8 2.8h-6z" fill="#0F2A30"/>
+          <circle cx="13" cy="28.5" r="5" fill="#fff" stroke="#0F2A30" stroke-width="2"/>
+          <path d="M13 25.8v2.7l1.9 1.2" stroke="#0F2A30" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <circle cx="29" cy="28.5" r="3.3" fill="#fff" stroke="#0F2A30" stroke-width="2"/>
+        </svg>
+        <div class="t"><b>Camión a Tiempo</b><span>Municipalidad de Valdivia</span></div>
+        <button class="demo-chip" type="button" id="demoChip" aria-expanded="false">DEMO</button>
+      </header>
+      <div class="demo-menu" id="demoMenu" hidden>
+        <button type="button" data-act="restart">Reiniciar recorrido</button>
+        <button type="button" data-act="sound">Activar sonido</button>
+        <small>Modo demostración: 1 segundo equivale a 30 segundos del recorrido.</small>
+      </div>
+
+      <main class="views" id="views">
+        <!-- INICIO -->
+        <section class="view" id="v-inicio">
+          <div class="eta" aria-live="polite">
+            <div class="row"><span>Camión recolector</span><span>Jornada AM</span></div>
+            <div class="num" id="num"><b id="numB">15</b><span id="numU">min</span></div>
+            <div class="when" id="when">Llega entre <em>10:43</em> y <em>10:53</em></div>
+            <div class="prog">
+              <div class="track"><i id="bar"></i></div>
+              <div class="ends"><span>Salió de la base</span><span>Tu esquina</span></div>
+            </div>
+          </div>
+          <div class="live"><span class="dot"></span><span>GPS municipal en línea</span><span class="sep">|</span><span id="upd">Actualizado hace 5 s</span></div>
+
+          <section class="card mapcard" aria-label="Mapa del recorrido">
+            <header><b>Recorrido de hoy</b><div class="legend"><span><i style="background:#127347"></i>Ya pasó</span><span><i style="background:#F2611D;opacity:.55"></i>Por pasar</span></div></header>
+            <svg viewBox="22 18 300 190" id="map" role="img" aria-label="Mapa de la Población Autoconstrucción con el camión sobre Rubén Darío">
+              <rect x="0" y="0" width="380" height="230" fill="#E8ECEA"/>
+              <path d="M326 150 L380 200 L380 230 L300 230 Z" fill="#D5E6D6"/>
+              <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <g stroke="#D3DAD7" stroke-width="5.5">
+                  <path id="s1" d="M26 84 L112 62 L160 48 L222 28"/>
+                  <path d="M32 104 L100 87 L160 71 L222 49"/>
+                  <path d="M70 183 L166 173 L253 166"/>
+                  <path d="M115 161 L168 152"/>
+                  <path d="M124 114 L174 103"/>
+                  <path d="M94 66 L100 100 L112 140 L116 176"/>
+                  <path d="M118 86 L128 132"/>
+                  <path d="M156 78 L162 98"/>
+                  <path d="M161 129 L168 164"/>
+                  <path d="M248 88 L272 128 L272 166"/>
+                  <path d="M228 140 L232 166"/>
+                  <path d="M192 74 L222 60"/>
+                  <path d="M60 140 L66 180"/>
+                </g>
+                <g stroke="#FFFFFF" stroke-width="3.6">
+                  <path d="M26 84 L112 62 L160 48 L222 28"/>
+                  <path d="M32 104 L100 87 L160 71 L222 49"/>
+                  <path d="M70 183 L166 173 L253 166"/>
+                  <path d="M115 161 L168 152"/>
+                  <path d="M124 114 L174 103"/>
+                  <path d="M94 66 L100 100 L112 140 L116 176"/>
+                  <path d="M118 86 L128 132"/>
+                  <path d="M156 78 L162 98"/>
+                  <path d="M161 129 L168 164"/>
+                  <path d="M248 88 L272 128 L272 166"/>
+                  <path d="M228 140 L232 166"/>
+                  <path d="M192 74 L222 60"/>
+                  <path d="M60 140 L66 180"/>
+                </g>
+                <!-- avenidas -->
+                <g stroke="#CBD3CF" stroke-width="8.5">
+                  <path d="M8 0 L21 66 L30 108 L42 152 L52 214 L54 230"/>
+                  <path d="M54 214 L120 201 L200 193 L322 182"/>
+                  <path d="M158 28 L172 84 L180 122 L190 170 L194 192"/>
+                  <path d="M234 0 L282 53 L380 160"/>
+                  <path d="M42 151 L90 141 L174 127 L200 120 L226 103 L248 84 L282 53 L306 32 L340 0"/>
+                </g>
+                <g stroke="#FFFFFF" stroke-width="6.2">
+                  <path d="M8 0 L21 66 L30 108 L42 152 L52 214 L54 230"/>
+                  <path d="M54 214 L120 201 L200 193 L322 182"/>
+                  <path d="M158 28 L172 84 L180 122 L190 170 L194 192"/>
+                  <path d="M234 0 L282 53 L380 160"/>
+                  <path d="M42 151 L90 141 L174 127 L200 120 L226 103 L248 84 L282 53 L306 32 L340 0"/>
+                </g>
+              </g>
+              <!-- recorrido -->
+              <path id="route" d="M54 230 L52 214 L42 152 L90 141 L174 127 L200 120 L226 103 L248 84 L282 53 L306 32 L340 0" fill="none" stroke="#F2611D" stroke-width="3.2" stroke-dasharray="1.5 5" stroke-linecap="round" opacity=".7"/>
+              <path id="done" d="M54 230 L52 214 L42 152 L90 141 L174 127 L200 120 L226 103 L248 84 L282 53 L306 32 L340 0" fill="none" stroke="#127347" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- nombres de calles -->
+              <g font-family="Overpass,Arial,sans-serif" font-weight="700" fill="#5B6C70" stroke="#E8ECEA" stroke-width="2.6" paint-order="stroke" font-size="7.4">
+                <text transform="translate(98 134) rotate(-9.5)" font-size="8.6" fill="#0F2A30">Rubén Darío</text>
+                <text transform="translate(229 93) rotate(-41)" font-size="8.6" fill="#0F2A30">Rubén Darío</text>
+                <text transform="translate(176 96) rotate(76)">Francisco Encina</text>
+                <text transform="translate(206 191) rotate(-4)">Gabriela Mistral</text>
+                <text transform="translate(29 92) rotate(77)">René Schneider</text>
+                <text transform="translate(300 86) rotate(47)">Errázuriz</text>
+                <text transform="translate(110 70) rotate(-12)">Diego Dublé Urrutia</text>
+                <text transform="translate(100 180) rotate(-5)">Alejandro Flores</text>
+                <text transform="translate(166 142) rotate(79)" font-size="6.4">Nicanor Parra</text>
+              </g>
+              <!-- casa del vecino en el pasaje -->
+              <g transform="translate(163 158)">
+                <path d="M-6 0 0-5 6 0v6h-12z" fill="#0F2A30"/><rect x="-1.5" y="2" width="3" height="4" fill="#FFB21A"/>
+              </g>
+              <path d="M163 151 L161.6 134" stroke="#0F2A30" stroke-width="1" stroke-dasharray="1.6 2" fill="none"/>
+              <!-- punto de retiro -->
+              <g transform="translate(161 129)">
+                <circle r="6.2" fill="#fff" stroke="#F2611D" stroke-width="2.4"/>
+                <circle r="2.3" fill="#F2611D"/>
+              </g>
+              <g id="bag" transform="translate(153 136)" opacity="0">
+                <path d="M-3.6 3.6c0-3.4 1.3-5.4 3.6-5.4s3.6 2 3.6 5.4v3.2h-7.2z" fill="#0F2A30"/><path d="M-1.2-1.8l1.2-2.4 1.2 2.4" stroke="#0F2A30" stroke-width="1" fill="none"/>
+              </g>
+              <!-- camión -->
+              <g id="truck">
+                <circle class="pulse" r="7" fill="none" stroke="#F2611D" stroke-width="1.4">
+                  <animate attributeName="r" from="7" to="15" dur="1.8s" repeatCount="indefinite"/>
+                  <animate attributeName="opacity" from=".7" to="0" dur="1.8s" repeatCount="indefinite"/>
+                </circle>
+                <circle r="7.6" fill="#F2611D" stroke="#fff" stroke-width="1.8"/>
+                <path d="M-4.4-2.4h5v4.4h-5zM.6-1.2h2.2l1.6 1.6V2H.6z" fill="#fff"/>
+              </g>
+            </svg>
+          </section>
+
+          <div class="card rowcard">
+            <span class="ic"><svg width="20" height="20" viewBox="0 0 28 28" aria-hidden="true"><path d="M14 2a9 9 0 0 1 9 9c0 7-9 15-9 15S5 18 5 11a9 9 0 0 1 9-9z" fill="#F2611D"/><circle cx="14" cy="11" r="3.4" fill="#fff"/></svg></span>
+            <div><small>Mi punto de retiro</small><strong id="spotName">Rubén Darío con Nicanor Parra</strong></div>
+            <button class="txtbtn" type="button" id="spotBtn">Cambiar</button>
+          </div>
+
+          <section class="fb" id="fb" hidden>
+            <p id="fbQ">¿Te sirvió el aviso?</p>
+            <div class="two" id="fbBtns"><button type="button" data-a="si">Sí, me sirvió</button><button type="button" data-a="no">No</button></div>
+          </section>
+
+          <div class="card rowcard notice">
+            <span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h3l6 4V6L7 10z" fill="#B47A00"/><path d="M16.5 9a4 4 0 0 1 0 6" stroke="#B47A00" stroke-width="2" fill="none" stroke-linecap="round"/></svg></span>
+            <div><small>Aviso del municipio</small><strong>Se vienen nuevas rutas de recolección</strong><p>Te avisaremos aquí si cambia el día o la jornada de tu sector.</p></div>
+          </div>
+
+          <button class="cta" type="button" data-act="report"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-2 4 2 4H5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Reportar un problema en mi calle</button>
+        </section>
+
+        <!-- CALENDARIO -->
+        <section class="view" id="v-cal" hidden>
+          <h2 class="h2">Calendario</h2>
+          <p class="lead">Días de recolección de tu sector. La hora exacta se informa cada día en Inicio.</p>
+          <div class="card">
+            <div class="week">
+              <div class="day"><span>L</span>Lun</div><div class="day"><span>M</span>Mar</div><div class="day on today"><span>AM</span>Mié</div><div class="day"><span>J</span>Jue</div><div class="day"><span>V</span>Vie</div><div class="day on"><span>AM</span>Sáb</div><div class="day"><span>D</span>Dom</div>
+            </div>
+          </div>
+          <div class="card">
+            <ul class="list">
+              <li><span>Jornada AM</span><b>desde las 07:00</b></li>
+              <li><span>Jornada PM</span><b>desde las 16:30</b></li>
+            </ul>
+          </div>
+          <h2 class="h2" style="font-size:1.1em">Últimas pasadas por tu esquina</h2>
+          <div class="card">
+            <ul class="list">
+              <li><span>Sábado 24</span><b>10:51</b></li>
+              <li><span>Miércoles 21</span><b>10:38</b></li>
+              <li><span>Sábado 17</span><b>11:05</b></li>
+              <li><span>Miércoles 14</span><b>10:44</b></li>
+            </ul>
+          </div>
+          <p class="note">Días y horas de ejemplo para el prototipo.</p>
+        </section>
+
+        <!-- AVISOS -->
+        <section class="view" id="v-avisos" hidden>
+          <h2 class="h2">Avisos</h2>
+          <p class="lead">Elige cuándo quieres que te avisemos.</p>
+          <div class="card">
+            <div class="set" style="border:0;padding-bottom:8px"><div><strong>Avisarme antes de que llegue</strong><p>Minutos antes de que el camión pase por tu punto de retiro.</p></div></div>
+            <div class="seg" id="seg"><button type="button" aria-pressed="false" data-m="5">5 min</button><button type="button" aria-pressed="true" data-m="10">10 min</button><button type="button" aria-pressed="false" data-m="15">15 min</button></div>
+          </div>
+          <div class="card">
+            <div class="set"><div><strong>Si el camión se atrasa</strong><p>Te avisamos si la llegada se corre más de 15 minutos.</p></div><button class="sw" role="switch" aria-checked="true" type="button" aria-label="Aviso por atraso"></button></div>
+            <div class="set"><div><strong>Cambios de ruta o de día</strong><p>Avisos oficiales del Departamento de Aseo y Ornato.</p></div><button class="sw" role="switch" aria-checked="true" type="button" aria-label="Avisos de cambios"></button></div>
+            <div class="set"><div><strong>Letra grande</strong><p>Aumenta el tamaño del texto en toda la aplicación.</p></div><button class="sw" role="switch" aria-checked="false" type="button" id="largeSw" aria-label="Letra grande"></button></div>
+          </div>
+          <div class="card rowcard">
+            <span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="13" rx="2" fill="none" stroke="#0F2A30" stroke-width="2"/><path d="M3 7l9 6 9-6" fill="none" stroke="#0F2A30" stroke-width="2"/></svg></span>
+            <div><strong>¿Alguien en casa no usa apps?</strong><p>Inscribe un número para que reciba el mismo aviso por mensaje de texto.</p></div>
+          </div>
+        </section>
+
+        <!-- REPORTES -->
+        <section class="view" id="v-rep" hidden>
+          <h2 class="h2">Reportes</h2>
+          <p class="lead">Lo que reportas llega al Departamento de Aseo y Ornato con la ubicación de tu punto de retiro.</p>
+          <button class="primary-btn" type="button" data-act="report">Nuevo reporte</button>
+          <div class="card">
+            <ul class="list" id="repList">
+              <li><span>Bolsas rotas por animales<br><small style="color:var(--ink-3)">17 de octubre</small></span><span class="tag ok">Resuelto</span></li>
+              <li><span>El camión no pasó<br><small style="color:var(--ink-3)">3 de octubre</small></span><span class="tag ok">Resuelto</span></li>
+            </ul>
+          </div>
+          <p class="note">Reportes de ejemplo para el prototipo.</p>
+        </section>
+      </main>
+
+      <nav class="tabs" role="tablist" aria-label="Secciones">
+        <button type="button" role="tab" aria-selected="true" data-v="v-inicio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Inicio</button>
+        <button type="button" role="tab" aria-selected="false" data-v="v-cal"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 10h16M9 3v4M15 3v4" stroke="currentColor" stroke-width="2"/></svg>Calendario</button>
+        <button type="button" role="tab" aria-selected="false" data-v="v-avisos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zM10 19a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Avisos</button>
+        <button type="button" role="tab" aria-selected="false" data-v="v-rep"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4h11l-2 4 2 4H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Reportes</button>
+      </nav>
+
+      <div class="notif" id="notif" role="status" aria-live="assertive">
+        <div class="card">
+          <svg width="38" height="38" viewBox="0 0 42 42" aria-hidden="true" style="flex:none"><rect width="42" height="42" rx="10" fill="#0F2A30"/><path d="M7 14h16v13H7zM23 18h6.5l5 5v4H23z" fill="#F2611D"/><circle cx="13" cy="28.5" r="5" fill="#fff" stroke="#0F2A30" stroke-width="2"/><circle cx="29" cy="28.5" r="3.3" fill="#fff" stroke="#0F2A30" stroke-width="2"/></svg>
+          <div><small><span>Camión a Tiempo</span><span>ahora</span></small><strong id="notifText">El camión está a 10 minutos de tu esquina. Ya puedes sacar tu bolsa.</strong></div>
+        </div>
+      </div>
+
+      <div class="scrim" id="repSheet" hidden>
+        <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="repT">
+          <div class="grab"></div>
+          <h3 id="repT">¿Qué pasó en tu calle?</h3>
+          <p>Elige una opción. El reporte se envía con la ubicación de tu punto de retiro.</p>
+          <div class="opts" id="repOpts">
+            <button class="opt" type="button" aria-pressed="false">Bolsas rotas por animales</button>
+            <button class="opt" type="button" aria-pressed="false">Basura acumulada en la esquina</button>
+            <button class="opt" type="button" aria-pressed="false">El camión no pasó</button>
+            <button class="opt" type="button" aria-pressed="false">Pasó antes de la hora indicada</button>
+          </div>
+          <button class="primary-btn" type="button" id="repSend" disabled>Enviar reporte</button>
+          <button class="ghost" type="button" data-close>Cancelar</button>
+        </div>
+      </div>
+
+      <div class="scrim" id="spotSheet" hidden>
+        <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="spotT">
+          <div class="grab"></div>
+          <h3 id="spotT">¿Dónde dejas tu bolsa?</h3>
+          <p>Si el camión no entra a tu pasaje, elige la esquina donde dejas la basura. El aviso se calcula para ese punto y no para tu casa.</p>
+          <div class="opts" id="spotOpts">
+            <button class="opt" type="button" aria-pressed="true">Rubén Darío con Nicanor Parra</button>
+            <button class="opt" type="button" aria-pressed="false">Rubén Darío con Francisco Encina</button>
+            <button class="opt" type="button" aria-pressed="false">Frente a mi casa</button>
+          </div>
+          <button class="primary-btn" type="button" id="spotSave">Guardar punto de retiro</button>
+          <button class="ghost" type="button" data-close>Cancelar</button>
+        </div>
+      </div>
+
+      <div class="toast" id="toast" hidden></div>
+    </div>
+  </div>
+
+  <aside class="side" aria-label="Atributos de la solución">
+    <span class="eyebrow">Atributos en el prototipo</span>
+    <ul class="attrs" id="attrs">
+      <li data-k="confiable"><b>Confiable</b><span>La hora se muestra como rango y viene del GPS que el municipio ya usa.</span></li>
+      <li data-k="simple"><b>Simple</b><span>Todo en una pantalla, lenguaje claro y opción de letra grande.</span></li>
+      <li data-k="oportuna"><b>Oportuna</b><span>Aviso antes de que el camión llegue al punto de retiro del vecino.</span></li>
+      <li data-k="economica"><b>Económica y sostenible</b><span>Usa el GPS "Copiloto" sin hardware nuevo, y la respuesta del vecino vuelve al municipio.</span></li>
+    </ul>
+  </aside>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const route=$('route'), done=$('done'), truck=$('truck'), bag=$('bag');
+  const L=route.getTotalLength();
+  // largo del recorrido hasta el punto de retiro (punto más cercano a la esquina)
+  let LC=0,best=1e9;
+  for(let i=0;i<=L;i+=0.5){const p=route.getPointAtLength(i);const d=(p.x-161)**2+(p.y-129)**2;if(d<best){best=d;LC=i}}
+  const ROUTE_MIN=32, SPEED=30, START=10*60+33;
+  const v=L/(ROUTE_MIN*60);
+  const etaMin=START+(LC/v)/60;
+  done.style.strokeDasharray=L+' '+L;
+
+  let t0=performance.now(), notified=false, passed=false, alertMin=10, audio=null, passedAt=0;
+  const fmt=m=>{m=Math.floor(m);const h=Math.floor(m/60)%24, mm=((m%60)+60)%60;return h+':'+String(mm).padStart(2,'0')};
+
+  function beep(){
+    if(!audio) return;
+    try{
+      const o=audio.createOscillator(), g=audio.createGain(), t=audio.currentTime;
+      o.type='sine'; o.frequency.setValueAtTime(880,t); o.frequency.setValueAtTime(1175,t+.14);
+      g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.22,t+.02); g.gain.exponentialRampToValueAtTime(.0001,t+.42);
+      o.connect(g).connect(audio.destination); o.start(t); o.stop(t+.45);
+    }catch(e){}
+  }
+  function notify(text){
+    $('notifText').textContent=text; $('notif').classList.add('show'); beep();
+    if(navigator.vibrate){try{navigator.vibrate([120,60,120])}catch(e){}}
+    clearTimeout(notify._t); notify._t=setTimeout(()=>$('notif').classList.remove('show'),5500);
+  }
+  function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>el.hidden=true,2800)}
+  function attr(keys){document.querySelectorAll('#attrs li').forEach(li=>li.classList.toggle('on',keys.includes(li.dataset.k)))}
+
+  function frame(now){
+    const simS=Math.max(0,(now-t0)/1000*SPEED);
+    const s=Math.min(L,simS*v);
+    const p=route.getPointAtLength(s);
+    truck.setAttribute('transform','translate('+p.x.toFixed(1)+' '+p.y.toFixed(1)+')');
+    done.style.strokeDashoffset=(L-s);
+    const nowMin=START+simS/60;
+    $('sbTime').textContent=fmt(nowMin);
+    const remain=(LC-s)/v/60;
+    $('bar').style.width=Math.min(100,Math.max(0,s/LC*100))+'%';
+
+    if(remain>0.4){
+      $('num').className='num'; $('numB').textContent=Math.ceil(remain); $('numU').textContent='min';
+      const m=Math.max(1,Math.min(5,Math.round(remain*0.3)));
+      $('when').innerHTML='Llega entre <em>'+fmt(etaMin-m)+'</em> y <em>'+fmt(etaMin+m)+'</em>';
+      if(remain<=alertMin && !notified){
+        notified=true; bag.setAttribute('opacity','1');
+        notify('El camión está a '+alertMin+' minutos de tu esquina. Ya puedes sacar tu bolsa.');
+      }
+      attr(notified?['oportuna','confiable']:['confiable','simple']);
+    }else if(remain>-0.6){
+      if(!notified){notified=true;bag.setAttribute('opacity','1')}
+      $('num').className='num word'; $('numB').textContent='Llegando'; $('numU').textContent='';
+      $('when').textContent='El camión está pasando por tu esquina';
+      attr(['oportuna']);
+    }else{
+      if(!passed){passed=true;passedAt=now;bag.setAttribute('opacity','0');$('fb').hidden=false}
+      $('num').className='num word'; $('numB').textContent='Pasó'; $('numU').textContent='a las '+fmt(etaMin);
+      $('when').textContent='Próxima recolección: sábado, jornada AM';
+      $('bar').style.width='100%';
+      attr(['economica']);
+      if(now-passedAt>45000) restart();
+    }
+    $('upd').textContent='Actualizado hace '+(Math.floor((now/1000)%12)+2)+' s';
+    requestAnimationFrame(frame);
+  }
+  function restart(){
+    t0=performance.now(); notified=false; passed=false;
+    bag.setAttribute('opacity','0'); $('fb').hidden=true; $('fbBtns').hidden=false; $('fbQ').textContent='¿Te sirvió el aviso?';
+  }
+  function sound(btns){
+    try{ if(!audio) audio=new (window.AudioContext||window.webkitAudioContext)(); audio.resume(); beep();
+      document.querySelectorAll('[data-act="sound"]').forEach(b=>b.textContent='Sonido activado');
+    }catch(e){ toast('Este navegador no permite sonido'); }
+  }
+
+  // pestañas
+  document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+    document.querySelectorAll('.view').forEach(v=>v.hidden=v.id!==b.dataset.v);
+    $('views').scrollTop=0;
+  }));
+
+  // acciones generales
+  document.addEventListener('click',e=>{
+    const a=e.target.closest('[data-act]'); if(!a) return;
+    const act=a.dataset.act;
+    if(act==='restart'){restart();$('demoMenu').hidden=true;toast('Recorrido reiniciado')}
+    if(act==='sound'){sound();$('demoMenu').hidden=true}
+    if(act==='report'){$('repSheet').hidden=false}
+  });
+  $('demoChip').onclick=()=>{const m=$('demoMenu');m.hidden=!m.hidden;$('demoChip').setAttribute('aria-expanded',!m.hidden)};
+
+  // hojas
+  document.querySelectorAll('.scrim').forEach(s=>{
+    s.addEventListener('click',e=>{if(e.target===s||e.target.closest('[data-close]'))s.hidden=true});
+  });
+  $('repOpts').addEventListener('click',e=>{
+    const b=e.target.closest('.opt'); if(!b) return;
+    $('repOpts').querySelectorAll('.opt').forEach(o=>o.setAttribute('aria-pressed',o===b));
+    $('repSend').disabled=false;
+  });
+  $('repSend').onclick=()=>{
+    const sel=$('repOpts').querySelector('[aria-pressed="true"]'); if(!sel) return;
+    const li=document.createElement('li');
+    li.innerHTML='<span></span><span class="tag new">Enviado</span>';
+    li.firstChild.innerHTML=sel.textContent+'<br><small style="color:var(--ink-3)">Hoy, '+$('sbTime').textContent+'</small>';
+    $('repList').prepend(li);
+    $('repOpts').querySelectorAll('.opt').forEach(o=>o.setAttribute('aria-pressed','false')); $('repSend').disabled=true;
+    $('repSheet').hidden=true; toast('Reporte enviado a Aseo y Ornato');
+  };
+  $('spotBtn').onclick=()=>{$('spotSheet').hidden=false};
+  $('spotOpts').addEventListener('click',e=>{
+    const b=e.target.closest('.opt'); if(!b) return;
+    $('spotOpts').querySelectorAll('.opt').forEach(o=>o.setAttribute('aria-pressed',o===b));
+  });
+  $('spotSave').onclick=()=>{
+    const sel=$('spotOpts').querySelector('[aria-pressed="true"]');
+    $('spotName').textContent=sel.textContent; $('spotSheet').hidden=true; toast('Punto de retiro guardado');
+  };
+
+  // avisos
+  $('seg').addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    $('seg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+    alertMin=+b.dataset.m; toast('Te avisaremos '+alertMin+' minutos antes');
+  });
+  document.querySelectorAll('.sw').forEach(sw=>sw.addEventListener('click',()=>{
+    const on=sw.getAttribute('aria-checked')!=='true'; sw.setAttribute('aria-checked',on);
+    if(sw.id==='largeSw') $('screen').classList.toggle('large',on);
+  }));
+
+  // respuesta del vecino
+  $('fbBtns').addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    $('fbQ').textContent=b.dataset.a==='si'?'Gracias. Tu respuesta ayuda a mejorar el servicio de tu sector.':'Gracias. El municipio revisará el aviso de tu sector.';
+    $('fbBtns').hidden=true;
+  });
+
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
